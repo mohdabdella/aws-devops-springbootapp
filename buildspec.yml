@@ -1,22 +1,23 @@
 version: 0.2
+
 phases:
   install:
-    runtime-versions:
-      java: corretto11
     commands:
+      - echo Installing dependencies...
       - apt-get update
       - apt-get install -y docker.io maven
   pre_build:
     commands:
-      - echo Logging in to Amazon ECR...
+      - echo Preparing the environment...
       - aws --version
+      - echo Logging in to Amazon ECR...
       - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 767397740213.dkr.ecr.us-east-1.amazonaws.com
       - REPOSITORY_URI=767397740213.dkr.ecr.us-east-1.amazonaws.com/awsdevopdproject
       - IMAGE_TAG=build-$(echo $CODEBUILD_BUILD_ID | awk -F":" '{print $2}')
   build:
     commands:
       - echo Build started on `date`
-      - echo building the Jar file
+      - echo Building the Maven project...
       - mvn clean install
       - echo Building the Docker image...
       - docker build -t $REPOSITORY_URI:latest .
@@ -24,13 +25,11 @@ phases:
   post_build:
     commands:
       - echo Build completed on `date`
-      - echo pushing to repo
+      - echo Pushing Docker image to Amazon ECR...
       - docker push $REPOSITORY_URI:latest
       - docker push $REPOSITORY_URI:$IMAGE_TAG
       - echo Writing image definitions file...
-      - DOCKER_CONTAINER_NAME=spring-demo-ecr
-      - printf '[{"name":"%s","imageUri":"%s"}]' $DOCKER_CONTAINER_NAME $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
-      - cat imagedefinitions.json
+      - printf '[{"name":"%s","imageUri":"%s"}]' spring-demo-ecr $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
 artifacts:
   files:
     - imagedefinitions.json
