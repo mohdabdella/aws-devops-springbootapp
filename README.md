@@ -19,3 +19,4 @@ Prerequisite :
 4. And your favourite code editor
    awsdevops endproject
 
+aws devops endprojectfinal
